@@ -39,6 +39,24 @@ namespace shapes
         int num_rays_;
     };
 
+    class Triangle : public svg::Drawable
+    {
+    public:
+        Triangle(svg::Point p1, svg::Point p2, svg::Point p3)
+            : p1_(p1), p2_(p2), p3_(p3)
+        {
+        }
+
+        // Реализует метод Draw интерфейса svg::Drawable
+        void Draw(svg::ObjectContainer &container) const override
+        {
+            container.Add(svg::Polyline().AddPoint(p1_).AddPoint(p2_).AddPoint(p3_).AddPoint(p1_));
+        }
+
+    private:
+        svg::Point p1_, p2_, p3_;
+    };
+
 };
 
 Polyline CreateStar(Point center, double outer_rad, double inner_rad, int num_rays)
