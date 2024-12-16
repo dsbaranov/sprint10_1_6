@@ -8,6 +8,7 @@
 using namespace std::literals;
 using namespace svg;
 
+
 namespace shapes {
 class Star : public svg::Drawable {
  public:

@@ -2,7 +2,7 @@
 namespace svg
 {
 
-    using namespace std::literals;
+    // ---------- Object ------------------
 
     void Object::Render(const RenderContext &context) const
     {
