@@ -1,4 +1,5 @@
 #define _USE_MATH_DEFINES
+#include <cassert>
 #include <cmath>
 #include <sstream>
 #include <vector>
@@ -7,7 +8,6 @@
 
 using namespace std::literals;
 using namespace svg;
-
 
 namespace shapes {
 class Star : public svg::Drawable {
@@ -33,7 +33,7 @@ class Star : public svg::Drawable {
       polyline.AddPoint({center_.x + inner_radius_ * sin(angle),
                          center_.y - inner_radius_ * cos(angle)});
     }
-    container.Add(polyline);
+    container.Add(polyline.SetFillColor("red"s).SetStrokeColor("black"s));
   };
 
  private:
@@ -68,12 +68,20 @@ class Snowman : public Drawable {
     container.Add(
         Circle()
             .SetCenter({head_center_.x, head_center_.y + head_radius_ * 5})
-            .SetRadius(head_radius_ * 2.0));
+            .SetRadius(head_radius_ * 2.0)
+            .SetFillColor("rgb(240,240,240)"s)
+            .SetStrokeColor("black"s));
     container.Add(
         Circle()
             .SetCenter({head_center_.x, head_center_.y + head_radius_ * 2})
-            .SetRadius(head_radius_ * 1.5));
-    container.Add(Circle().SetCenter(head_center_).SetRadius(head_radius_));
+            .SetRadius(head_radius_ * 1.5)
+            .SetFillColor("rgb(240,240,240)"s)
+            .SetStrokeColor("black"s));
+    container.Add(Circle()
+                      .SetCenter(head_center_)
+                      .SetRadius(head_radius_)
+                      .SetFillColor("rgb(240,240,240)"s)
+                      .SetStrokeColor("black"s));
   }
 
  private:
@@ -96,26 +104,63 @@ void DrawPicture(const Container& container, svg::ObjectContainer& target) {
   DrawPicture(begin(container), end(container), target);
 }
 
+// Выполняет линейную интерполяцию значения от from до to в зависимости от
+// параметра t
+uint8_t Lerp(uint8_t from, uint8_t to, double t) {
+  return static_cast<uint8_t>(std::round((to - from) * t + from));
+}
+
+// Выполняет линейную интерполяцию Rgb цвета от from до to в зависимости от
+// параметра t
+svg::Rgb Lerp(svg::Rgb from, svg::Rgb to, double t) {
+  return {Lerp(from.red, to.red, t), Lerp(from.green, to.green, t),
+          Lerp(from.blue, to.blue, t)};
+}
+
 int main() {
   using namespace svg;
   using namespace shapes;
   using namespace std;
+  {
+    // Задаёт цвет в виде трех компонент в таком порядке: red, green, blue
+    svg::Rgb rgb{255, 0, 100};
+    assert(rgb.red == 255);
+    assert(rgb.green == 0);
+    assert(rgb.blue == 100);
 
-  vector<unique_ptr<svg::Drawable>> picture;
+    // Задаёт цвет по умолчанию: red=0, green=0, blue=0
+    svg::Rgb color;
+    assert(color.red == 0 && color.green == 0 && color.blue == 0);
+  }
+  {
+    // Задаёт цвет в виде четырёх компонент: red, green, blue, opacity
+    svg::Rgba rgba{100, 20, 50, 0.3};
+    assert(rgba.red == 100);
+    assert(rgba.green == 20);
+    assert(rgba.blue == 50);
+    assert(rgba.opacity == 0.3);
 
-  picture.emplace_back(
-      make_unique<Triangle>(Point{100, 20}, Point{120, 50}, Point{80, 40}));
-  // 5-лучевая звезда с центром {50, 20}, длиной лучей 10 и внутренним радиусом
-  // 4
-  picture.emplace_back(make_unique<Star>(Point{50.0, 20.0}, 10.0, 4.0, 5));
-  // Снеговик с "головой" радиусом 10, имеющей центр в точке {30, 20}
-  picture.emplace_back(make_unique<Snowman>(Point{30, 20}, 10.0));
+    // Чёрный непрозрачный цвет: red=0, green=0, blue=0, alpha=1.0
+    svg::Rgba color;
+    assert(color.red == 0 && color.green == 0 && color.blue == 0 &&
+           color.opacity == 1.0);
+  }
 
-  svg::Document doc;
-  // Так как документ реализует интерфейс ObjectContainer,
-  // его можно передать в DrawPicture в качестве цели для рисования
-  DrawPicture(picture, doc);
+  Rgb start_color{0, 255, 30};
+  Rgb end_color{20, 20, 150};
 
-  // Выводим полученный документ в stdout
+  const int num_circles = 10;
+  Document doc;
+  for (int i = 0; i < num_circles; ++i) {
+    const double t = double(i) / (num_circles - 1);
+
+    const Rgb fill_color = Lerp(start_color, end_color, t);
+
+    doc.Add(Circle()
+                .SetFillColor(fill_color)
+                .SetStrokeColor("black"s)
+                .SetCenter({i * 20.0 + 40, 40.0})
+                .SetRadius(15));
+  }
   doc.Render(cout);
 }
